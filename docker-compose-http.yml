@@ -1,4 +1,4 @@
-﻿services:
+services:
   backend:
     build:
       context: .
@@ -15,7 +15,7 @@
       - SECRET_KEY=timeline-production-secret-key-change-this
       - UPLOAD_FOLDER=/app/static/uploads
       - MAX_CONTENT_LENGTH=16777216
-      - CORS_ORIGINS=http://xn--fiq64bn65b9gd1xa.com,http://寮犱紵鐖卞垬鏂板畤.com,http://192.3.98.137
+      - CORS_ORIGINS=http://xn--cpq55e94lgvdcukyqt.com,http://张伟爱刘新宇.com,https://xn--cpq55e94lgvdcukyqt.com,https://张伟爱刘新宇.com
       - LOG_LEVEL=INFO
     restart: unless-stopped
     networks:

@@ -11,7 +11,7 @@
     project_name: "timeline-notebook"
     project_repo: "https://github.com/z1159998925/timeline-notebook.git"
     project_dir: "/opt/timeline-notebook"
-    domain: "{{ ansible_domain | default('张伟爱刘新宇.com') }}"
+    domain: "{{ ansible_domain | default('xn--cpq55e94lgvdcukyqt.com') }}"
     email: "{{ ansible_email | default('1159998925@qq.com') }}"
     
   tasks:
