@@ -104,12 +104,8 @@ echo "⚙️ 创建HTTPS配置..."
 
 # 创建Nginx HTTPS配置
 echo "⚙️ 生成Nginx HTTPS配置..."
-if [ -f "nginx-https-template.conf" ]; then
-    # 使用模板文件
-    sed "s/{{DOMAIN}}/$DOMAIN/g" nginx-https-template.conf > nginx-https.conf
-else
-    # 直接生成配置
-    cat > nginx-https.conf << 'EOF'
+# 强制使用内联生成，避免模板文件的控制字符问题
+cat > nginx-https.conf << 'EOF'
 events {
     worker_connections 1024;
 }
@@ -194,16 +190,11 @@ http {
     }
 }
 EOF
-fi
 
 # 创建Docker Compose HTTPS配置
 echo "⚙️ 生成Docker Compose HTTPS配置..."
-if [ -f "docker-compose-https-template.yml" ]; then
-    # 使用模板文件
-    sed -e "s/{{DOMAIN}}/$DOMAIN/g" -e "s/{{EMAIL}}/$EMAIL/g" docker-compose-https-template.yml > docker-compose-https.yml
-else
-    # 直接生成配置
-    cat > docker-compose-https.yml << EOF
+# 强制使用内联生成，避免模板文件的控制字符问题
+cat > docker-compose-https.yml << EOF
 version: '3.8'
 
 services:
@@ -266,7 +257,6 @@ volumes:
   certbot-certs:
   certbot-www:
 EOF
-fi
 
 # 创建环境配置
 echo "📝 配置环境变量..."
