@@ -25,16 +25,16 @@
           
           <div v-if="entry.media_type === 'image'" class="timeline-media">
             <img 
-              :src="`http://localhost:5000${entry.media_url}`"
+              :src="getMediaUrl(entry.media_url)"
               alt="{{ entry.title }}"
               class="timeline-image"
-              @error="handleImageError(`http://localhost:5000${entry.media_url}`, entry.media_url)"
-              @load="handleImageLoad(`http://localhost:5000${entry.media_url}`)"
-              @click="viewOriginalImage(`http://localhost:5000${entry.media_url}`)"
+              @error="handleImageError(getMediaUrl(entry.media_url), entry.media_url)"
+              @load="handleImageLoad(getMediaUrl(entry.media_url))"
+              @click="viewOriginalImage(getMediaUrl(entry.media_url))"
             >
-            <div v-if="imageErrors[`http://localhost:5000${entry.media_url}`]" class="image-error">
-                图片加载失败: http://localhost:5000{{ entry.media_url }}
-                <p>错误信息: {{ imageErrorMessages[`http://localhost:5000${entry.media_url}`] }}</p>
+            <div v-if="imageErrors[getMediaUrl(entry.media_url)]" class="image-error">
+                图片加载失败: {{ getMediaUrl(entry.media_url) }}
+                <p>错误信息: {{ imageErrorMessages[getMediaUrl(entry.media_url)] }}</p>
               </div>
           </div>
           
@@ -133,6 +133,22 @@ export default {
     }
   },
   methods: {
+    // 获取媒体文件URL，根据环境动态生成
+    getMediaUrl(mediaUrl) {
+      if (!mediaUrl) return '';
+      
+      // 如果是开发环境，使用localhost
+      if (this.isDev) {
+        return `http://localhost:5000${mediaUrl}`;
+      }
+      
+      // 生产环境，使用相对路径或当前域名
+      if (mediaUrl.startsWith('/')) {
+        return mediaUrl; // 相对路径，浏览器会自动使用当前域名
+      }
+      
+      return mediaUrl;
+    },
     // 防抖搜索
     debounceSearch() {
       if (this.searchTimeout) {

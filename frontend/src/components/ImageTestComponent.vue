@@ -34,6 +34,22 @@ export default {
     };
   },
   methods: {
+    // 获取媒体文件URL，根据环境动态生成
+    getMediaUrl(mediaUrl) {
+      if (!mediaUrl) return '';
+      
+      // 如果是开发环境，使用localhost
+      if (import.meta.env.MODE === 'development') {
+        return `http://localhost:5000${mediaUrl}`;
+      }
+      
+      // 生产环境，使用相对路径或当前域名
+      if (mediaUrl.startsWith('/')) {
+        return mediaUrl; // 相对路径，浏览器会自动使用当前域名
+      }
+      
+      return mediaUrl;
+    },
     handleLoad() {
       console.log('图片加载成功:', this.imageUrl);
       this.isLoaded = true;
@@ -64,7 +80,7 @@ export default {
           // 查找第一个有图片的笔记
           for (const entry of this.timelineEntries) {
             if (entry.media_type === 'image' && entry.media_url) {
-              this.imageUrl = entry.media_url;
+              this.imageUrl = this.getMediaUrl(entry.media_url);
               console.log('找到图片URL:', this.imageUrl);
               break;
             }

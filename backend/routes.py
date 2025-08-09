@@ -15,7 +15,8 @@ def health_check():
     """健康检查端点"""
     try:
         # 检查数据库连接
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
         return jsonify({
             'status': 'healthy',
             'message': 'Timeline Notebook API is running',
@@ -66,24 +67,40 @@ def add_timeline_entry():
     if 'media' in request.files:
         file = request.files['media']
         if file and allowed_file(file.filename):
-            # 获取原始文件名和扩展名
-            original_filename = file.filename
-            file_ext = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
-            
-            # 使用UUID生成安全的文件名，保留原始扩展名
-            unique_filename = f'timeline_{uuid.uuid4().hex}.{file_ext}'
-            file_path = os.path.join(current_app.config.get('UPLOAD_FOLDER'), unique_filename)
-            file.save(file_path)
+            try:
+                # 获取原始文件名和扩展名
+                original_filename = file.filename
+                file_ext = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
+                
+                # 使用UUID生成安全的文件名，保留原始扩展名
+                unique_filename = f'timeline_{uuid.uuid4().hex}.{file_ext}'
+                upload_folder = current_app.config.get('UPLOAD_FOLDER')
+                
+                # 确保上传目录存在
+                if not os.path.exists(upload_folder):
+                    os.makedirs(upload_folder, exist_ok=True)
+                    os.chmod(upload_folder, 0o777)
+                
+                file_path = os.path.join(upload_folder, unique_filename)
+                print(f"保存文件到: {file_path}")
+                file.save(file_path)
+                
+                # 设置文件权限
+                os.chmod(file_path, 0o666)
 
-            # 确定文件类型
-            if file_ext in {'png', 'jpg', 'jpeg', 'gif'}:
-                new_entry.media_type = 'image'
-            elif file_ext in {'mp4', 'avi', 'mov'}:
-                new_entry.media_type = 'video'
-            else:
-                new_entry.media_type = 'file'
+                # 确定文件类型
+                if file_ext in {'png', 'jpg', 'jpeg', 'gif'}:
+                    new_entry.media_type = 'image'
+                elif file_ext in {'mp4', 'avi', 'mov'}:
+                    new_entry.media_type = 'video'
+                else:
+                    new_entry.media_type = 'file'
 
-            new_entry.media_path = unique_filename
+                new_entry.media_path = unique_filename
+                print(f"文件上传成功: {unique_filename}")
+            except Exception as e:
+                print(f"文件上传失败: {str(e)}")
+                return jsonify({'message': f'文件上传失败: {str(e)}'}), 500
 
     db.session.add(new_entry)
     db.session.commit()

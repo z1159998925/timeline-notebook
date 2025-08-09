@@ -343,13 +343,34 @@ export default {
     this.fetchBackupHistory();
   },
   methods: {
-    // 处理URL中的反斜杠和URL编码的反斜杠
+    // 处理URL中的反斜杠和URL编码的反斜杠，并根据环境动态生成URL
     normalizeUrl(url) {
       if (!url) return url;
+      
       // 替换URL编码的反斜杠(%5C)
       url = url.replace(/%5C/g, '/');
       // 替换普通反斜杠
-      return url.replace(/\\/g, '/');
+      url = url.replace(/\\/g, '/');
+      
+      // 根据环境动态生成完整URL
+      return this.getMediaUrl(url);
+    },
+    
+    // 获取媒体文件URL，根据环境动态生成
+    getMediaUrl(mediaUrl) {
+      if (!mediaUrl) return '';
+      
+      // 如果是开发环境，使用localhost
+      if (import.meta.env.MODE === 'development') {
+        return `http://localhost:5000${mediaUrl}`;
+      }
+      
+      // 生产环境，使用相对路径或当前域名
+      if (mediaUrl.startsWith('/')) {
+        return mediaUrl; // 相对路径，浏览器会自动使用当前域名
+      }
+      
+      return mediaUrl;
     },
     fetchTimelineEntries() {
       api.get('/api/timeline')

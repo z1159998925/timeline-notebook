@@ -7,11 +7,23 @@ import os
 from werkzeug.exceptions import RequestEntityTooLarge
 
 # 根据环境变量选择配置
-config_name = os.environ.get('FLASK_ENV', 'development')
-app_config = config.get(config_name, config['default'])
+config_name = os.environ.get('FLASK_ENV', 'production')
+app_config = config.get(config_name, config['production'])
 
 app = Flask(__name__)
 app.config.from_object(app_config)
+
+# 确保数据库目录和文件存在
+db_path = 'data/timeline.db'
+db_dir = os.path.dirname(db_path)
+if not os.path.exists(db_dir):
+    os.makedirs(db_dir, exist_ok=True)
+    os.chmod(db_dir, 0o777)
+
+# 确保数据库文件存在
+if not os.path.exists(db_path):
+    open(db_path, 'a').close()
+    os.chmod(db_path, 0o666)
 
 # 初始化数据库
 db.init_app(app)
@@ -52,19 +64,29 @@ app.register_blueprint(main)
 upload_folder = app.config.get('UPLOAD_FOLDER')
 if upload_folder and not os.path.exists(upload_folder):
     os.makedirs(upload_folder, exist_ok=True)
+    os.chmod(upload_folder, 0o777)  # 确保有写入权限
 
 # 创建数据库表
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("✅ 数据库表创建成功")
+    except Exception as e:
+        print(f"❌ 数据库表创建失败: {e}")
 
 if __name__ == '__main__':
-    # 根据环境设置debug模式
-    debug_mode = config_name == 'development'
-    port = int(os.environ.get('PORT', 5000))
+    # 根据环境变量决定启动模式
+    is_production = os.environ.get('FLASK_ENV') == 'production'
+    debug_mode = not is_production
     
-    app.run(
-        debug=debug_mode, 
-        use_reloader=debug_mode, 
-        host='0.0.0.0', 
-        port=port
-    )
+    if is_production:
+        print("启动Timeline Notebook后端服务 (生产模式)...")
+        print("服务端口: 5000")
+        print("调试模式: 关闭")
+    else:
+        print("启动Timeline Notebook后端服务 (开发模式)...")
+        print("访问地址: http://localhost:5000")
+        print("健康检查: http://localhost:5000/health")
+        print("API文档: http://localhost:5000/api/")
+    
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)

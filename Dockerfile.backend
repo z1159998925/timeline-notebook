@@ -19,17 +19,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ .
 
 # 创建必要的目录
-RUN mkdir -p static/uploads data
+RUN mkdir -p /app/static/uploads /app/data
 
 # 设置权限
-RUN chmod -R 755 static/uploads data
+RUN chmod -R 777 /app/static/uploads /app/data
 
 # 暴露端口
 EXPOSE 5000
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/ || exit 1
+  CMD curl -f http://localhost:5000/health || exit 1
 
 # 启动命令 - 根据环境变量选择启动方式
 CMD if [ "$FLASK_ENV" = "production" ]; then \

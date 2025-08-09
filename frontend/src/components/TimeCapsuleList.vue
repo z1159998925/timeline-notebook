@@ -193,19 +193,19 @@
             <h4>附件：</h4>
             <img 
               v-if="viewingCapsule.media_type === 'image'" 
-              :src="viewingCapsule.media_url" 
+              :src="getMediaUrl(viewingCapsule.media_url)" 
               alt="胶囊图片"
               class="media-image"
             >
             <video 
               v-else-if="viewingCapsule.media_type === 'video'" 
-              :src="viewingCapsule.media_url" 
+              :src="getMediaUrl(viewingCapsule.media_url)" 
               controls
               class="media-video"
             ></video>
             <a 
               v-else 
-              :href="viewingCapsule.media_url" 
+              :href="getMediaUrl(viewingCapsule.media_url)" 
               target="_blank"
               class="media-file"
             >
@@ -399,6 +399,23 @@ export default {
       }
     }
 
+    // 获取媒体文件URL，根据环境动态生成
+    const getMediaUrl = (mediaUrl) => {
+      if (!mediaUrl) return ''
+      
+      // 如果是开发环境，使用localhost
+      if (import.meta.env.MODE === 'development') {
+        return `http://localhost:5000${mediaUrl}`
+      }
+      
+      // 生产环境，使用相对路径或当前域名
+      if (mediaUrl.startsWith('/')) {
+        return mediaUrl // 相对路径，浏览器会自动使用当前域名
+      }
+      
+      return mediaUrl
+    }
+
     // 启动倒计时更新
     const startCountdown = () => {
       countdownInterval.value = setInterval(() => {
@@ -439,7 +456,8 @@ export default {
       closeUnlockForm,
       closeViewDialog,
       formatDate,
-      formatCountdown
+      formatCountdown,
+      getMediaUrl
     }
   }
 }
