@@ -278,12 +278,57 @@ echo "📁 创建必要目录..."
 mkdir -p data static/uploads
 chmod 755 data static/uploads
 
+# 创建临时HTTP-only Nginx配置（用于证书申请）
+echo "🌐 创建临时HTTP配置进行证书申请..."
+cat > nginx-http-temp.conf << 'EOF'
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    
+    sendfile on;
+    keepalive_timeout 65;
+
+    # 上游后端服务
+    upstream backend {
+        server timeline-backend:5000;
+    }
+
+    # HTTP服务器 - 仅用于证书申请
+    server {
+        listen 80;
+        server_name _;
+        
+        # Let's Encrypt验证
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+        
+        # 其他请求返回简单页面
+        location / {
+            return 200 'Certificate verification in progress...';
+            add_header Content-Type text/plain;
+        }
+    }
+}
+EOF
+
+# 临时修改 docker-compose 配置使用 HTTP-only 配置
+sed -i 's|./nginx-https.conf:/etc/nginx/nginx.conf|./nginx-http-temp.conf:/etc/nginx/nginx.conf|' docker-compose-https.yml
+
 # 启动HTTP服务（用于证书申请）
 echo "🌐 启动HTTP服务进行证书申请..."
 docker-compose -f docker-compose-https.yml up -d frontend
 
 # 等待nginx启动
-sleep 10
+sleep 15
+
+# 检查 nginx 是否正常启动
+echo "🔍 检查Nginx状态..."
+docker-compose -f docker-compose-https.yml logs frontend
 
 # 申请SSL证书
 echo "🔐 申请SSL证书..."
@@ -295,6 +340,10 @@ docker-compose -f docker-compose-https.yml run --rm certbot \
     --agree-tos \
     --no-eff-email \
     --force-renewal
+
+# 恢复 HTTPS 配置
+echo "🔄 恢复HTTPS配置..."
+sed -i 's|./nginx-http-temp.conf:/etc/nginx/nginx.conf|./nginx-https.conf:/etc/nginx/nginx.conf|' docker-compose-https.yml
 
 # 重启前端服务以加载证书
 echo "🔄 重启服务以加载SSL证书..."
