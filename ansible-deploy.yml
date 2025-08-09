@@ -1,0 +1,280 @@
+---
+# Timeline Notebook Ansible 部署脚本
+# 使用方法：ansible-playbook -i inventory.yml ansible-deploy.yml
+
+- name: Deploy Timeline Notebook with Ansible
+  hosts: all
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    project_name: "timeline-notebook"
+    project_repo: "https://github.com/z1159998925/timeline-notebook.git"
+    project_dir: "/opt/timeline-notebook"
+    domain: "{{ ansible_domain | default('张伟爱刘新宇.com') }}"
+    email: "{{ ansible_email | default('1159998925@qq.com') }}"
+    
+  tasks:
+    - name: 显示部署信息
+      debug:
+        msg: |
+          开始部署 Timeline Notebook
+          域名: {{ domain }}
+          邮箱: {{ email }}
+          目标服务器: {{ inventory_hostname }}
+          
+    - name: 检查操作系统
+      fail:
+        msg: "此脚本仅支持 Ubuntu/Debian 系统"
+      when: ansible_os_family != "Debian"
+      
+    - name: 更新系统包
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+        
+    - name: 安装基础软件包
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - unzip
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - python3
+          - python3-pip
+        state: present
+        
+    - name: 检查Docker是否已安装
+      command: docker --version
+      register: docker_check
+      failed_when: false
+      changed_when: false
+      
+    - name: 安装Docker（如果未安装）
+      block:
+        - name: 移除旧版本Docker
+          apt:
+            name:
+              - docker
+              - docker-engine
+              - docker.io
+              - containerd
+              - runc
+            state: absent
+            
+        - name: 添加Docker GPG密钥
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+            
+        - name: 添加Docker仓库
+          apt_repository:
+            repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+            state: present
+            
+        - name: 安装Docker
+          apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            state: present
+            update_cache: yes
+            
+        - name: 启动并启用Docker服务
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+      when: docker_check.rc != 0
+      
+    - name: 配置防火墙
+      block:
+        - name: 重置防火墙规则
+          ufw:
+            state: reset
+            
+        - name: 设置默认策略
+          ufw:
+            direction: "{{ item.direction }}"
+            policy: "{{ item.policy }}"
+          loop:
+            - { direction: 'incoming', policy: 'deny' }
+            - { direction: 'outgoing', policy: 'allow' }
+            
+        - name: 开放必要端口
+          ufw:
+            rule: allow
+            port: "{{ item }}"
+          loop:
+            - "22"
+            - "80"
+            - "443"
+            
+        - name: 启用防火墙
+          ufw:
+            state: enabled
+            
+    - name: 创建项目目录
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        mode: '0755'
+        
+    - name: 停止现有服务
+      shell: |
+        cd {{ project_dir }} || exit 0
+        docker compose down --remove-orphans 2>/dev/null || true
+        docker system prune -f
+      ignore_errors: yes
+      
+    - name: 克隆或更新项目代码
+      git:
+        repo: "{{ project_repo }}"
+        dest: "{{ project_dir }}"
+        version: main
+        force: yes
+        
+    - name: 创建必要目录
+      file:
+        path: "{{ project_dir }}/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - data
+        - static/uploads
+        
+    - name: 设置脚本执行权限
+      file:
+        path: "{{ project_dir }}/{{ item }}"
+        mode: '0755'
+      loop:
+        - setup-server-environment.sh
+        - deploy-project.sh
+        
+    - name: 生成Docker Compose配置
+      template:
+        src: docker-compose-https.yml.j2
+        dest: "{{ project_dir }}/docker-compose-https.yml"
+        mode: '0644'
+      vars:
+        domain_name: "{{ domain }}"
+        ssl_email: "{{ email }}"
+        
+    - name: 生成Nginx配置
+      template:
+        src: nginx-https.conf.j2
+        dest: "{{ project_dir }}/nginx-https.conf"
+        mode: '0644'
+      vars:
+        domain_name: "{{ domain }}"
+        
+    - name: 生成临时HTTP配置
+      template:
+        src: nginx-http-temp.conf.j2
+        dest: "{{ project_dir }}/nginx-http-temp.conf"
+        mode: '0644'
+      vars:
+        domain_name: "{{ domain }}"
+        
+    - name: 复制HTTP配置为当前配置
+      copy:
+        src: "{{ project_dir }}/nginx-http-temp.conf"
+        dest: "{{ project_dir }}/nginx-domain.conf"
+        remote_src: yes
+        
+    - name: 构建并启动服务
+      shell: |
+        cd {{ project_dir }}
+        export DOMAIN="{{ domain }}"
+        export EMAIL="{{ email }}"
+        docker compose -f docker-compose-https.yml build
+        docker compose -f docker-compose-https.yml up -d
+        
+    - name: 等待服务启动
+      wait_for:
+        port: 80
+        host: localhost
+        delay: 10
+        timeout: 60
+        
+    - name: 申请SSL证书
+      shell: |
+        cd {{ project_dir }}
+        docker compose -f docker-compose-https.yml exec -T certbot certbot certonly \
+          --webroot \
+          --webroot-path=/var/www/certbot \
+          --email "{{ email }}" \
+          --agree-tos \
+          --no-eff-email \
+          --force-renewal \
+          -d "{{ domain }}"
+      register: ssl_result
+      
+    - name: 切换到HTTPS配置
+      copy:
+        src: "{{ project_dir }}/nginx-https.conf"
+        dest: "{{ project_dir }}/nginx-domain.conf"
+        remote_src: yes
+      when: ssl_result.rc == 0
+      
+    - name: 重启前端服务
+      shell: |
+        cd {{ project_dir }}
+        docker compose -f docker-compose-https.yml restart frontend
+      when: ssl_result.rc == 0
+      
+    - name: 等待HTTPS服务启动
+      wait_for:
+        port: 443
+        host: localhost
+        delay: 5
+        timeout: 30
+      when: ssl_result.rc == 0
+      
+    - name: 验证部署
+      uri:
+        url: "https://{{ domain }}"
+        method: GET
+        status_code: [200, 301, 302]
+        validate_certs: no
+      register: site_check
+      retries: 3
+      delay: 10
+      when: ssl_result.rc == 0
+      
+    - name: 显示部署结果
+      debug:
+        msg: |
+          🎉 Timeline Notebook 部署完成！
+          
+          📋 部署信息:
+          🌐 网站地址: https://{{ domain }}
+          📁 项目目录: {{ project_dir }}
+          🔐 SSL证书: {% if ssl_result.rc == 0 %}已配置{% else %}配置失败{% endif %}
+          
+          🔧 管理命令:
+          查看服务: docker compose -f {{ project_dir }}/docker-compose-https.yml ps
+          查看日志: docker compose -f {{ project_dir }}/docker-compose-https.yml logs -f
+          重启服务: docker compose -f {{ project_dir }}/docker-compose-https.yml restart
+          
+          {% if ssl_result.rc == 0 and site_check.status in [200, 301, 302] %}
+          ✅ 网站访问正常
+          {% else %}
+          ⚠️ 请检查域名解析和防火墙配置
+          {% endif %}
+
+# 模板文件内容（需要创建templates目录）
+# templates/docker-compose-https.yml.j2
+# templates/nginx-https.conf.j2  
+# templates/nginx-http-temp.conf.j2

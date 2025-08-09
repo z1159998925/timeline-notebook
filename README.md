@@ -1,14 +1,38 @@
 # Timeline Notebook
 
-一个基于 Flask 和 Vue.js 的时间轴笔记应用。
+一个基于Vue.js和Flask的时间线笔记应用，支持富文本编辑、图片上传、标签分类等功能。
 
-## 功能特性
+## 🌟 功能特性
 
-- 📝 创建和管理时间轴条目
-- 🖼️ 支持图片上传
-- 🔍 搜索和筛选功能
+- 📝 富文本编辑器支持
+- 🖼️ 图片上传和预览
+- 🏷️ 标签分类管理
+- 📅 时间线视图
+- 🔍 搜索和筛选
 - 📱 响应式设计
 - 🔐 用户认证系统
+- 🔒 HTTPS自动配置
+- 🐳 Docker容器化部署
+
+## 🛠️ 技术栈
+
+### 前端
+- Vue.js 3
+- Vite
+- Element Plus
+- Quill.js (富文本编辑器)
+
+### 后端
+- Flask
+- SQLAlchemy
+- Flask-Login
+- Werkzeug
+
+### 部署
+- Docker & Docker Compose
+- Nginx
+- Let's Encrypt SSL
+- Ansible (可选)
 
 ## 🚀 快速开始
 
