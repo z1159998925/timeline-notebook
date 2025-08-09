@@ -15,12 +15,59 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}🔧 修复YAML控制字符问题${NC}"
 echo "=================================="
 
-# 检查必要的环境变量
+# 检查命令行参数
+if [ $# -eq 2 ]; then
+    DOMAIN="$1"
+    EMAIL="$2"
+fi
+
+# 检查必要的环境变量或参数
 if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
-    echo -e "${RED}❌ 错误: 请设置环境变量 DOMAIN 和 EMAIL${NC}"
-    echo "示例:"
-    echo "export DOMAIN=张伟爱刘新宇.com"
-    echo "export EMAIL=1159998925@qq.com"
+    echo -e "${YELLOW}⚠️ 未检测到域名和邮箱信息${NC}"
+    echo ""
+    echo "请选择设置方式："
+    echo "1. 交互式输入"
+    echo "2. 使用环境变量"
+    echo "3. 使用命令行参数"
+    echo ""
+    read -p "请选择 (1/2/3): " choice
+    
+    case $choice in
+        1)
+            echo ""
+            read -p "请输入域名 (例如: 张伟爱刘新宇.com): " DOMAIN
+            read -p "请输入邮箱 (例如: 1159998925@qq.com): " EMAIL
+            ;;
+        2)
+            echo -e "${RED}❌ 请先设置环境变量后再运行脚本${NC}"
+            echo "示例:"
+            echo "export DOMAIN=张伟爱刘新宇.com"
+            echo "export EMAIL=1159998925@qq.com"
+            echo "sudo -E ./fix-yaml-issue.sh  # 使用 -E 保留环境变量"
+            exit 1
+            ;;
+        3)
+            echo -e "${RED}❌ 请使用命令行参数运行脚本${NC}"
+            echo "示例:"
+            echo "sudo ./fix-yaml-issue.sh 张伟爱刘新宇.com 1159998925@qq.com"
+            exit 1
+            ;;
+        *)
+            echo -e "${RED}❌ 无效选择${NC}"
+            exit 1
+            ;;
+    esac
+fi
+
+# 验证输入
+if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
+    echo -e "${RED}❌ 域名和邮箱不能为空${NC}"
+    exit 1
+fi
+
+# 验证邮箱格式
+if ! echo "$EMAIL" | grep -E "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$" > /dev/null; then
+    echo -e "${RED}❌ 邮箱格式不正确${NC}"
     exit 1
 fi
 
