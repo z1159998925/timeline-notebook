@@ -193,70 +193,71 @@ EOF
 
 # 创建Docker Compose HTTPS配置
 echo "⚙️ 生成Docker Compose HTTPS配置..."
-# 强制使用内联生成，避免模板文件的控制字符问题
-cat > docker-compose-https.yml << EOF
-version: '3.8'
+# 先删除可能存在的文件
+rm -f docker-compose-https.yml
 
-services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: timeline-backend
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./data:/app/data
-      - ./static/uploads:/app/static/uploads
-    environment:
-      - FLASK_ENV=production
-      - DATABASE_URL=sqlite:///data/timeline.db
-      - SECRET_KEY=timeline-production-secret-key-change-this
-      - UPLOAD_FOLDER=/app/static/uploads
-      - MAX_CONTENT_LENGTH=16777216
-      - DOMAIN=$DOMAIN
-      - EMAIL=$EMAIL
-      - CORS_ORIGINS=https://$DOMAIN,http://$DOMAIN
-      - LOG_LEVEL=INFO
-    restart: unless-stopped
-    networks:
-      - timeline-network
-
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend.server
-    container_name: timeline-frontend
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx-https.conf:/etc/nginx/nginx.conf
-      - certbot-certs:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - timeline-network
-
-  certbot:
-    image: certbot/certbot
-    container_name: timeline-certbot
-    volumes:
-      - certbot-certs:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    command: echo "Certbot container ready"
-    restart: "no"
-
-networks:
-  timeline-network:
-    driver: bridge
-
-volumes:
-  certbot-certs:
-  certbot-www:
-EOF
+# 使用 echo 逐行生成配置文件
+echo "version: '3.8'" > docker-compose-https.yml
+echo "" >> docker-compose-https.yml
+echo "services:" >> docker-compose-https.yml
+echo "  backend:" >> docker-compose-https.yml
+echo "    build:" >> docker-compose-https.yml
+echo "      context: ." >> docker-compose-https.yml
+echo "      dockerfile: Dockerfile.backend" >> docker-compose-https.yml
+echo "    container_name: timeline-backend" >> docker-compose-https.yml
+echo "    ports:" >> docker-compose-https.yml
+echo "      - \"5000:5000\"" >> docker-compose-https.yml
+echo "    volumes:" >> docker-compose-https.yml
+echo "      - ./data:/app/data" >> docker-compose-https.yml
+echo "      - ./static/uploads:/app/static/uploads" >> docker-compose-https.yml
+echo "    environment:" >> docker-compose-https.yml
+echo "      - FLASK_ENV=production" >> docker-compose-https.yml
+echo "      - DATABASE_URL=sqlite:///data/timeline.db" >> docker-compose-https.yml
+echo "      - SECRET_KEY=timeline-production-secret-key-change-this" >> docker-compose-https.yml
+echo "      - UPLOAD_FOLDER=/app/static/uploads" >> docker-compose-https.yml
+echo "      - MAX_CONTENT_LENGTH=16777216" >> docker-compose-https.yml
+echo "      - DOMAIN=${DOMAIN}" >> docker-compose-https.yml
+echo "      - EMAIL=${EMAIL}" >> docker-compose-https.yml
+echo "      - CORS_ORIGINS=https://${DOMAIN},http://${DOMAIN}" >> docker-compose-https.yml
+echo "      - LOG_LEVEL=INFO" >> docker-compose-https.yml
+echo "    restart: unless-stopped" >> docker-compose-https.yml
+echo "    networks:" >> docker-compose-https.yml
+echo "      - timeline-network" >> docker-compose-https.yml
+echo "" >> docker-compose-https.yml
+echo "  frontend:" >> docker-compose-https.yml
+echo "    build:" >> docker-compose-https.yml
+echo "      context: ." >> docker-compose-https.yml
+echo "      dockerfile: Dockerfile.frontend.server" >> docker-compose-https.yml
+echo "    container_name: timeline-frontend" >> docker-compose-https.yml
+echo "    ports:" >> docker-compose-https.yml
+echo "      - \"80:80\"" >> docker-compose-https.yml
+echo "      - \"443:443\"" >> docker-compose-https.yml
+echo "    volumes:" >> docker-compose-https.yml
+echo "      - ./nginx-https.conf:/etc/nginx/nginx.conf" >> docker-compose-https.yml
+echo "      - certbot-certs:/etc/letsencrypt" >> docker-compose-https.yml
+echo "      - certbot-www:/var/www/certbot" >> docker-compose-https.yml
+echo "    depends_on:" >> docker-compose-https.yml
+echo "      - backend" >> docker-compose-https.yml
+echo "    restart: unless-stopped" >> docker-compose-https.yml
+echo "    networks:" >> docker-compose-https.yml
+echo "      - timeline-network" >> docker-compose-https.yml
+echo "" >> docker-compose-https.yml
+echo "  certbot:" >> docker-compose-https.yml
+echo "    image: certbot/certbot" >> docker-compose-https.yml
+echo "    container_name: timeline-certbot" >> docker-compose-https.yml
+echo "    volumes:" >> docker-compose-https.yml
+echo "      - certbot-certs:/etc/letsencrypt" >> docker-compose-https.yml
+echo "      - certbot-www:/var/www/certbot" >> docker-compose-https.yml
+echo "    command: echo \"Certbot container ready\"" >> docker-compose-https.yml
+echo "    restart: \"no\"" >> docker-compose-https.yml
+echo "" >> docker-compose-https.yml
+echo "networks:" >> docker-compose-https.yml
+echo "  timeline-network:" >> docker-compose-https.yml
+echo "    driver: bridge" >> docker-compose-https.yml
+echo "" >> docker-compose-https.yml
+echo "volumes:" >> docker-compose-https.yml
+echo "  certbot-certs:" >> docker-compose-https.yml
+echo "  certbot-www:" >> docker-compose-https.yml
 
 # 创建环境配置
 echo "📝 配置环境变量..."
@@ -266,9 +267,9 @@ DATABASE_URL=sqlite:///data/timeline.db
 SECRET_KEY=timeline-production-secret-key-change-this
 UPLOAD_FOLDER=/app/static/uploads
 MAX_CONTENT_LENGTH=16777216
-DOMAIN=$DOMAIN
-EMAIL=$EMAIL
-CORS_ORIGINS=https://$DOMAIN,http://$DOMAIN
+DOMAIN=${DOMAIN}
+EMAIL=${EMAIL}
+CORS_ORIGINS=https://${DOMAIN},http://${DOMAIN}
 LOG_LEVEL=INFO
 EOF
 
@@ -311,7 +312,7 @@ sleep 30
 echo "🔄 设置证书自动更新..."
 cat > /etc/cron.d/certbot-renew << EOF
 # 每天凌晨2点检查证书更新
-0 2 * * * root cd $PROJECT_DIR && docker-compose -f docker-compose-https.yml run --rm certbot renew --quiet && docker-compose -f docker-compose-https.yml restart frontend
+0 2 * * * root cd ${PROJECT_DIR} && docker-compose -f docker-compose-https.yml run --rm certbot renew --quiet && docker-compose -f docker-compose-https.yml restart frontend
 EOF
 
 # 配置防火墙
