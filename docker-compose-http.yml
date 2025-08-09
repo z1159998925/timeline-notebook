@@ -1,0 +1,56 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: timeline-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./static/uploads:/app/static/uploads
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///data/timeline.db
+      - SECRET_KEY=timeline-production-secret-key-change-this
+      - UPLOAD_FOLDER=/app/static/uploads
+      - MAX_CONTENT_LENGTH=16777216
+      - CORS_ORIGINS=http://xn--fiq64bn65b9gd1xa.com,http://张伟爱刘新宇.com,http://192.3.98.137
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - timeline-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.server
+    container_name: timeline-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx-http.conf:/etc/nginx/nginx.conf
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - timeline-network
+
+networks:
+  timeline-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+volumes:
+  timeline-data:
+    driver: local
