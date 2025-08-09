@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: timeline-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./static/uploads:/app/static/uploads
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///data/timeline.db
+      - SECRET_KEY=timeline-production-secret-key-change-this
+      - UPLOAD_FOLDER=/app/static/uploads
+      - MAX_CONTENT_LENGTH=16777216
+      - DOMAIN={{DOMAIN}}
+      - EMAIL={{EMAIL}}
+      - CORS_ORIGINS=https://{{DOMAIN}},http://{{DOMAIN}}
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - timeline-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.server
+    container_name: timeline-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-https.conf:/etc/nginx/nginx.conf
+      - certbot-certs:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - timeline-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: timeline-certbot
+    volumes:
+      - certbot-certs:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    command: echo "Certbot container ready"
+    restart: "no"
+
+networks:
+  timeline-network:
+    driver: bridge
+
+volumes:
+  certbot-certs:
+  certbot-www:
