@@ -292,19 +292,21 @@ http {
     sendfile on;
     keepalive_timeout 65;
 
-    # 上游后端服务
-    upstream backend {
-        server timeline-backend:5000;
-    }
-
     # HTTP服务器 - 仅用于证书申请
     server {
         listen 80;
         server_name _;
         
-        # Let's Encrypt验证
+        # Let's Encrypt验证路径
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
+            try_files $uri $uri/ =404;
+        }
+        
+        # 健康检查
+        location /health {
+            return 200 'OK';
+            add_header Content-Type text/plain;
         }
         
         # 其他请求返回简单页面
@@ -323,12 +325,18 @@ sed -i 's|./nginx-https.conf:/etc/nginx/nginx.conf|./nginx-http-temp.conf:/etc/n
 echo "🌐 启动HTTP服务进行证书申请..."
 docker-compose -f docker-compose-https.yml up -d frontend
 
-# 等待nginx启动
-sleep 15
+# 等待服务启动
+echo "⏳ 等待服务启动..."
+sleep 20
 
-# 检查 nginx 是否正常启动
-echo "🔍 检查Nginx状态..."
+# 检查服务状态
+echo "🔍 检查服务状态..."
+docker-compose -f docker-compose-https.yml ps
 docker-compose -f docker-compose-https.yml logs frontend
+
+# 测试HTTP访问
+echo "🧪 测试HTTP访问..."
+curl -I http://localhost/.well-known/acme-challenge/test || echo "HTTP测试失败"
 
 # 申请SSL证书
 echo "🔐 申请SSL证书..."
