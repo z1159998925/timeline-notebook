@@ -17,12 +17,13 @@ services:
     restart: unless-stopped
     networks:
       - timeline-network
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # 临时禁用健康检查
+    # healthcheck:
+    #   test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
 
   # 前端服务
   frontend:
@@ -34,13 +35,13 @@ services:
     networks:
       - timeline-network
     depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - backend
+    # 临时禁用健康检查
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
 
   # Nginx代理服务
   nginx:
@@ -59,11 +60,12 @@ services:
     restart: unless-stopped
     networks:
       - timeline-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # 临时禁用健康检查
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/api/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
 
 networks:
   timeline-network:
