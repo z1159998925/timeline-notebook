@@ -1,5 +1,8 @@
 <template>
   <div class="app-container">
+    <!-- 健康检查组件 -->
+    <HealthCheck />
+    
     <header class="app-header">
       <div class="header-content">
         <h1>时光轴记事本</h1>
@@ -27,11 +30,13 @@
 import { ref, onMounted, watch } from 'vue';
 import api from './axios.js'
 import ThemeSwitch from './components/ThemeSwitch.vue'
+import HealthCheck from './components/HealthCheck.vue';
 
 export default {
   name: 'App',
   components: {
-    ThemeSwitch
+    ThemeSwitch,
+    HealthCheck
   },
   setup() {
     const isLoggedIn = ref(false);

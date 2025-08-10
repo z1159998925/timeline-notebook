@@ -11,6 +11,7 @@ main = Blueprint('main', __name__)
 # 健康检查路由
 @main.route('/', methods=['GET'])
 @main.route('/health', methods=['GET'])
+@main.route('/api/health', methods=['GET'])
 def health_check():
     """健康检查端点"""
     try:

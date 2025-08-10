@@ -1,30 +1,26 @@
 import axios from 'axios';
+import environmentManager from './utils/environment.js';
 
-// 获取基础URL的函数
-function getBaseURL() {
-  // 在Vite环境中使用import.meta.env.MODE
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
-  }
-  // 兼容其他环境
-  return process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5000';
-}
-
-// 创建axios实例
+// 创建axios实例，使用环境管理器配置
 const api = axios.create({
-  baseURL: getBaseURL(),
-  timeout: 30000, // 增加到30秒，支持文件上传
-  withCredentials: true // 允许携带cookie
+  baseURL: environmentManager.getApiBaseURL(),
+  timeout: environmentManager.getTimeout(),
+  withCredentials: environmentManager.isCredentialsEnabled()
 });
 
 // 请求拦截器
 api.interceptors.request.use(
   config => {
-    console.log('请求配置:', config);
+    if (environmentManager.isDebugEnabled()) {
+      console.log(`🚀 API请求: ${config.method?.toUpperCase()} ${config.url}`);
+      console.log('请求配置:', config);
+    }
     return config;
   },
   error => {
-    console.error('请求错误:', error);
+    if (environmentManager.isDebugEnabled()) {
+      console.error('❌ 请求错误:', error);
+    }
     return Promise.reject(error);
   }
 );
@@ -32,13 +28,23 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
   response => {
-    console.log('响应数据:', response);
+    if (environmentManager.isDebugEnabled()) {
+      console.log(`✅ API响应: ${response.status} ${response.config.url}`);
+      console.log('响应数据:', response);
+    }
     return response;
   },
   error => {
-    console.error('响应错误:', error);
+    if (environmentManager.isDebugEnabled()) {
+      console.error('❌ 响应错误:', error);
+    }
     return Promise.reject(error);
   }
 );
 
 export default api;
+
+// 便捷导出函数
+export const getApiBaseUrl = () => environmentManager.getApiBaseURL();
+export const getMediaUrl = (path) => environmentManager.getFullMediaURL(path);
+export const getEnvironment = () => environmentManager.getEnvironment();

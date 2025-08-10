@@ -42,6 +42,24 @@ class ProductionConfig(Config):
     # 生产环境安全配置
     PREFERRED_URL_SCHEME = 'https'
     
+    # 强制HTTPS重定向
+    FORCE_HTTPS = True
+    
+    # 生产环境日志级别
+    LOG_LEVEL = 'WARNING'
+    
+    # 生产环境上传文件夹
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or '/app/static/uploads'
+    
+    # 生产环境数据库配置优化
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_timeout': 30,
+        'pool_recycle': 3600,  # 1小时回收连接
+        'pool_pre_ping': True,
+        'pool_size': 10,
+        'max_overflow': 20
+    }
+    
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
