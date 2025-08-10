@@ -9,7 +9,7 @@ ENV VITE_API_BASE_URL=/api
 
 # 复制package文件并安装依赖
 COPY frontend/package*.json ./
-RUN npm ci --only=production --silent
+RUN npm ci --silent
 
 # 复制源代码
 COPY frontend/ .
