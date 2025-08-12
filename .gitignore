@@ -85,3 +85,48 @@ complete-*.html
 # Temporary files
 *.tmp
 *.temp
+
+# Large files and archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso
+*.dmg
+
+# Package lock files (keep only frontend)
+package-lock.json
+
+# SSL certificates
+ssl/
+nginx/ssl/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Docker volumes and data
+data/
+volumes/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Development tools
+.venv/
+.virtualenv/
+pyenv.cfg
+
+# Cache directories
+.cache/
+.npm/
+.yarn/
+
+# Build artifacts
+*.o
+*.a
+*.lib
+*.dll
+*.exe

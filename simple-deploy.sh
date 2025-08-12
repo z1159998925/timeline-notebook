@@ -1,80 +1,61 @@
 #!/bin/bash
 
-# 简化部署脚本 - 避免 Docker bake 问题
+# Timeline Notebook 简化部署脚本
+# 专注于基本功能运行，移除复杂的安全配置检查
 
 set -e
 
-echo "🚀 开始简化部署..."
+echo "🚀 开始部署 Timeline Notebook..."
 
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# 检查必要的命令
+command -v docker >/dev/null 2>&1 || { echo "❌ Docker 未安装"; exit 1; }
+command -v docker-compose >/dev/null 2>&1 || { echo "❌ Docker Compose 未安装"; exit 1; }
 
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# 创建必要的目录
+mkdir -p uploads
+mkdir -p data
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
+# 创建简化的环境配置文件
+echo "📝 创建环境配置文件..."
+cat > .env.production << EOF
+# 基本配置
+FLASK_ENV=production
+FLASK_DEBUG=False
+SECRET_KEY=timeline-notebook-secret-key-$(date +%s)
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# 数据库配置
+DATABASE_URL=sqlite:///data/timeline.db
 
-# 清理环境
-log_info "清理 Docker 环境..."
-docker-compose down 2>/dev/null || true
-docker system prune -f
-docker builder prune -f
+# 文件上传配置
+UPLOAD_FOLDER=uploads
+MAX_CONTENT_LENGTH=16777216
 
-# 分步构建镜像
-log_info "构建后端镜像..."
-docker build -f Dockerfile.backend -t timeline-notebook-backend:latest . || {
-    log_error "后端镜像构建失败"
-    exit 1
-}
+# 服务端口
+PORT=5000
+EOF
 
-log_info "构建前端镜像..."
-docker build -f Dockerfile.frontend.production -t timeline-notebook-frontend:latest . || {
-    log_error "前端镜像构建失败"
-    exit 1
-}
+echo "🧹 清理旧容器和镜像..."
+docker-compose down --remove-orphans 2>/dev/null || true
+docker system prune -f 2>/dev/null || true
 
-log_success "镜像构建完成"
+echo "🔨 构建和启动服务..."
+docker-compose up --build -d
 
-# 启动服务
-log_info "启动服务..."
-docker-compose up -d || {
-    log_error "服务启动失败"
+echo "⏳ 等待服务启动..."
+sleep 10
+
+# 简单的服务检查
+echo "🔍 检查服务状态..."
+if docker-compose ps | grep -q "Up"; then
+    echo "✅ 服务启动成功！"
+    echo "📱 前端访问地址: http://localhost"
+    echo "🔧 后端API地址: http://localhost/api"
+else
+    echo "❌ 服务启动失败，请检查日志:"
     docker-compose logs
     exit 1
-}
-
-# 等待服务启动
-log_info "等待服务启动..."
-sleep 30
-
-# 检查服务状态
-log_info "检查服务状态..."
-docker-compose ps
-
-# 健康检查
-log_info "执行健康检查..."
-if curl -s http://localhost/health > /dev/null 2>&1; then
-    log_success "健康检查通过"
-else
-    log_error "健康检查失败，查看日志："
-    docker-compose logs --tail=50
 fi
 
-log_success "部署完成！"
-echo ""
-echo "🔧 管理命令:"
-echo "  查看日志: docker-compose logs"
-echo "  查看状态: docker-compose ps"
-echo "  重启服务: docker-compose restart"
-echo "  停止服务: docker-compose down"
+echo "🎉 部署完成！"
+echo "💡 查看日志: docker-compose logs -f"
+echo "🛑 停止服务: docker-compose down"
