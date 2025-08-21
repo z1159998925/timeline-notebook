@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   backend:
@@ -20,12 +19,6 @@ services:
       dockerfile: Dockerfile
     container_name: timeline-frontend
     restart: unless-stopped
-
-  nginx:
-    build:
-      context: .
-      dockerfile: Dockerfile.nginx
-    container_name: timeline-nginx
     ports:
       - "80:80"
     volumes:
@@ -33,8 +26,6 @@ services:
       - ./uploads:/var/www/uploads:ro
     depends_on:
       - backend
-      - frontend
-    restart: unless-stopped
 
 networks:
   timeline-network:
