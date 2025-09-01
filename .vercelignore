@@ -1,7 +1,16 @@
 node_modules
 build
-dist
 .git
 .trae
 .log
 .figma
+backend/
+*.py
+*.sh
+*.yml
+*.yaml
+nginx*
+ssl/
+inventory*
+Dockerfile*
+docker-compose*
