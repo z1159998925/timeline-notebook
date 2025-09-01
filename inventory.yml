@@ -1,0 +1,41 @@
+# Ansible Inventory 配置文件
+# 请根据您的服务器信息修改以下配置
+
+all:
+  hosts:
+    production_server:
+      ansible_host: YOUR_SERVER_IP          # 替换为您的服务器IP地址
+      ansible_user: YOUR_USERNAME           # 替换为您的SSH用户名（通常是root或ubuntu）
+      ansible_ssh_pass: YOUR_PASSWORD       # 替换为您的SSH密码（如果使用密码认证）
+      # ansible_ssh_private_key_file: ~/.ssh/id_rsa  # 如果使用SSH密钥，取消注释并设置密钥路径
+      ansible_port: 22                      # SSH端口，默认22
+      ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+  
+  vars:
+    # 项目配置
+    domain_name: YOUR_DOMAIN.com           # 替换为您的域名
+    admin_email: YOUR_EMAIL@example.com    # 替换为您的邮箱地址
+    project_dir: /opt/timeline-notebook    # 项目部署目录
+    git_repo: https://github.com/your-username/timeline-notebook.git  # Git仓库地址
+    
+    # 数据库配置
+    db_name: timeline_notebook
+    db_user: timeline_user
+    db_password: CHANGE_THIS_PASSWORD      # 请设置强密码
+    
+    # 应用配置
+    flask_secret_key: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=64') }}"
+    upload_max_size: 50M
+    
+    # SSL配置
+    enable_ssl: true
+    ssl_email: "{{ admin_email }}"
+    
+    # 安全配置
+    allowed_hosts:
+      - "{{ domain_name }}"
+      - "www.{{ domain_name }}"
+    
+    cors_origins:
+      - "https://{{ domain_name }}"
+      - "https://www.{{ domain_name }}"

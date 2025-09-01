@@ -1,0 +1,51 @@
+# Ansible Inventory 配置示例
+# 复制此文件为 inventory.yml 并修改相应配置
+
+all:
+  hosts:
+    timeline-server:
+      # 服务器IP地址
+      ansible_host: 你的服务器IP
+      # SSH用户名
+      ansible_user: root
+      # SSH端口（默认22）
+      ansible_port: 22
+      # SSH私钥路径（可选，如果使用密钥认证）
+      ansible_ssh_private_key_file: ~/.ssh/id_rsa
+      # 或者使用密码认证（不推荐）
+      # ansible_ssh_pass: 你的密码
+      
+  vars:
+    # 域名配置
+    ansible_domain: "张伟爱刘新宇.com"
+    # 邮箱配置（用于SSL证书申请）
+    ansible_email: "1159998925@qq.com"
+    
+    # 可选配置
+    # 项目目录
+    project_dir: "/opt/timeline-notebook"
+    # Git仓库
+    project_repo: "https://github.com/z1159998925/timeline-notebook.git"
+
+# 多服务器配置示例
+# production:
+#   hosts:
+#     web-server-1:
+#       ansible_host: 192.168.1.10
+#       ansible_user: root
+#     web-server-2:
+#       ansible_host: 192.168.1.11
+#       ansible_user: root
+#   vars:
+#     ansible_domain: "production.example.com"
+#     ansible_email: "admin@example.com"
+
+# staging:
+#   hosts:
+#     staging-server:
+#       ansible_host: 192.168.1.20
+#       ansible_user: ubuntu
+#       ansible_ssh_private_key_file: ~/.ssh/staging_key
+#   vars:
+#     ansible_domain: "staging.example.com"
+#     ansible_email: "staging@example.com"

@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-08-10T09:43:00.667065",
+  "checks": {
+    "backend_production": false,
+    "frontend_production": false,
+    "docker_compose": true,
+    "environment_files": true,
+    "ssl_certificates": true,
+    "production_scripts": true,
+    "security_config": true
+  },
+  "messages": {
+    "backend": "��ʼnginx�ͺ��ƥ���Լ��...\n============================================================\n���ɼ����Ա���...\n���nginx����...\nPASS: upstream backend\nPASS: API����\nPASS: ��̬�ļ�����\nFAIL: �������\nPASS: Gzipѹ��\nPASS: ��ȫͷ\nPASS: ��������\nPASS: �ļ��ϴ�����\nNginx���ü��: 7/8 ��ͨ��\n�����·��...\n����API·��: 0 ��\n�������·��: 0 ��\n��̬�ļ�·��: 0 ��\n��龲̬�ļ�����...\nPASS: Flask��̬�ļ������� backend/app_production.py\nPASS: �ϴ�Ŀ¼������ .env.production\n���Docker����...\nPASS: ��˷���\nPASS: ǰ�˷���\nPASS: ��������\nPASS: �������\nPASS: ���������ļ�\nPASS: ������\nDocker���ü��: 6/6 ��ͨ��\n���CORS����...\nFAIL: CORS��������\nPASS: ������������\nPASS: Flask-CORS����\nPASS: ������֤\n��黷����������...\nPASS: ���б�Ҫ�Ļ���������������\n============================================================\n�����: 66.7% (4/6 ��ͨ��)\nWARNING: �����������⣬���޸������¼��\nʧ�ܵļ����:\n  - nginx_config\n  - cors_config\n",
+    "frontend": "��ʼǰ�������������...\n============================================================\n����ǰ�˼�鱨��...\n���ǰ�˹�������...\nPASS: �����ű�\nPASS: Vue����\nPASS: Axios����\nPASS: Vite��������\nPASS: �ִ������֧��\nǰ�˹�������: 5/5 ��ͨ��\n���Vite����...\n  vite.config.js: 5/5 ��ͨ��\n    PASS: Vue���\n    PASS: ��������\n    PASS: ����ָ�\n    PASS: ѹ������\n    PASS: ��������\n  vite.config.production.js: 5/6 ��ͨ��\n    PASS: Vue���\n    PASS: ��������\n    PASS: ����ָ�\n    PASS: ѹ������\n    FAIL: �����Ż�\n    PASS: Դ��ӳ��ر�\n��黷������...\nPASS: ������������\nPASS: �������\nFAIL: API����\nFAIL: ý���ļ�����\nPASS: ������������\nPASS: ������������\nPASS: Vite��������\n��������: 5/7 ��ͨ��\n���Axios����...\nERROR: Axios�����ļ�������\n���APIʹ�����...\n����API�˵�: 10 ��\nFAIL: ȱ��API�˵�: /api/register\n���ǰ��Dockerfile...\nERROR: Dockerfile.frontend.production������\n���ǰ�˺�˼�����...\nFAIL: ǰ��API��������·�ɲ�ƥ��: /api/timeline, /api/logout, /api/time-capsules, /api/admin/users/count, /api/admin/restore, /api/health, /api/admin/backups, /api/login, /api/admin/backup, /api/login-status\n============================================================\n�����: 14.3% (1/7 ��ͨ��)\nWARNING: ǰ�����ô������⣬���޸������¼��\nʧ�ܵļ����:\n  - vite_config\n  - environment_config\n  - axios_config\n  - api_usage\n  - dockerfile\n  - frontend_backend_compatibility\n"
+  },
+  "score": 71.42857142857143,
+  "status": "NEEDS_IMPROVEMENT"
+}
