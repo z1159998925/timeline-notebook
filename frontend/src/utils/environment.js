@@ -50,8 +50,8 @@ class EnvironmentManager {
   loadConfig() {
     const baseConfigs = {
       development: {
-        apiBaseURL: '/api',
-        mediaBaseURL: '/static',
+        apiBaseURL: 'http://localhost:5000/api',
+        mediaBaseURL: 'http://localhost:5000/static',
         wsBaseURL: 'ws://localhost:5000',
         timeout: 10000,
         withCredentials: true,
@@ -59,9 +59,9 @@ class EnvironmentManager {
         logLevel: 'debug'
       },
       production: {
-        apiBaseURL: '/api',
-        mediaBaseURL: '/static',
-        wsBaseURL: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`,
+        apiBaseURL: 'https://your-railway-app.railway.app/api',
+        mediaBaseURL: 'https://your-railway-app.railway.app/static',
+        wsBaseURL: 'wss://your-railway-app.railway.app',
         timeout: 5000,
         withCredentials: true,
         debug: false,
