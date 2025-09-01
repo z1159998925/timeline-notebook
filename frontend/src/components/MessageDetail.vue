@@ -443,7 +443,15 @@ export default {
 
     // 格式化时间
     formatTime(timestamp) {
+      if (!timestamp) {
+        return '未知时间'
+      }
+      
       const date = new Date(timestamp)
+      if (isNaN(date.getTime())) {
+        return '无效时间'
+      }
+      
       const now = new Date()
       const diff = now - date
       

@@ -80,12 +80,15 @@ if __name__ == '__main__':
     is_production = os.environ.get('FLASK_ENV') == 'production'
     debug_mode = not is_production
     
+    # Railway会通过PORT环境变量提供端口号
+    port = int(os.environ.get('PORT', 5000))
+    
     if is_production:
-        print("启动Timeline Notebook后端服务 (生产模式)...")
+        print(f"启动Timeline Notebook后端服务 (生产模式) - 端口: {port}...")
     else:
         print("启动Timeline Notebook后端服务 (开发模式)...")
-        print("访问地址: http://localhost:5000")
-        print("健康检查: http://localhost:5000/health")
-        print("API文档: http://localhost:5000/api/")
+        print(f"访问地址: http://localhost:{port}")
+        print(f"健康检查: http://localhost:{port}/health")
+        print(f"API文档: http://localhost:{port}/api/")
     
-    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

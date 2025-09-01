@@ -31,9 +31,9 @@ def init_database():
             admin_user.set_password('admin123')
             db.session.add(admin_user)
             db.session.commit()
-    
+            print("✅ 默认管理员用户创建成功")
         else:
-    
+            print("✅ 管理员用户已存在")
         
         # 初始化关键词过滤数据
         if KeywordFilter.query.count() == 0:
@@ -52,8 +52,11 @@ def init_database():
                 db.session.add(filter_keyword)
             
             db.session.commit()
-    
+            print("✅ 默认关键词过滤规则创建成功")
         else:
+            print("✅ 关键词过滤规则已存在")
+        
+        print("✅ 数据库初始化完成")
     
 
 if __name__ == '__main__':

@@ -15,7 +15,40 @@
     <!-- 已删除与/create-entry关联的新建笔记按钮 -->
     <!-- 调试信息已移除 -->
     </div>
-    <div class="timeline-content">
+    
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在加载时光轴数据...</p>
+    </div>
+    
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container">
+      <div class="error-icon">⚠️</div>
+      <h3 class="error-title">加载失败</h3>
+      <p class="error-message">{{ error }}</p>
+      <div class="error-actions">
+        <button @click="retryFetchData" class="retry-button" :disabled="loading">
+          <i class="fas fa-redo"></i> 重试 {{ retryCount > 0 ? `(${retryCount})` : '' }}
+        </button>
+        <button @click="$router.push('/admin-login')" class="admin-button">
+          <i class="fas fa-user-shield"></i> 管理员登录
+        </button>
+      </div>
+    </div>
+    
+    <!-- 空数据状态 -->
+    <div v-else-if="!loading && timelineEntries.length === 0" class="empty-container">
+      <div class="empty-icon">📝</div>
+      <h3 class="empty-title">暂无时光轴数据</h3>
+      <p class="empty-message">还没有任何时光轴记录，开始创建您的第一条记录吧！</p>
+      <button v-if="isLoggedIn && isAdmin" @click="$router.push('/create-entry')" class="create-first-button">
+        <i class="fas fa-plus"></i> 创建第一条记录
+      </button>
+    </div>
+    
+    <!-- 时光轴内容 -->
+    <div v-else class="timeline-content">
       <div v-for="entry in displayedEntries" :key="entry.id" class="timeline-item">
         <div class="timeline-dot"></div>
         <div class="timeline-card">
@@ -101,7 +134,11 @@ export default {
       // 添加开发环境标志
       isDev: import.meta.env.MODE === 'development',
       // 管理员标志
-      isAdmin: false
+      isAdmin: false,
+      // 添加加载和错误状态
+      loading: false,
+      error: null,
+      retryCount: 0
     };
   },
   created() {
@@ -223,6 +260,9 @@ export default {
       window.open(url, '_blank');
     },
     fetchTimelineEntries() {
+      this.loading = true;
+      this.error = null;
+      
       api.get('/timeline')
         .then(response => {
           this.timelineEntries = response.data;
@@ -232,10 +272,30 @@ export default {
             this.newComment[entry.id] = '';
             this.fetchComments(entry.id);
           });
+          this.loading = false;
+          this.retryCount = 0;
         })
         .catch(error => {
           console.error('获取时光轴数据失败:', error);
+          this.loading = false;
+          this.error = '无法连接到服务器，请检查网络连接或稍后重试';
+          
+          // 如果是网络错误或404错误，提供更具体的错误信息
+          if (error.response) {
+            if (error.response.status === 404) {
+              this.error = '服务暂时不可用，这可能是因为后端服务未部署。请联系管理员或稍后重试。';
+            } else if (error.response.status >= 500) {
+              this.error = '服务器内部错误，请稍后重试。';
+            }
+          } else if (error.request) {
+            this.error = '无法连接到服务器，请检查网络连接。这可能是因为后端服务未部署或网络问题。';
+          }
         });
+    },
+    
+    retryFetchData() {
+      this.retryCount++;
+      this.fetchTimelineEntries();
     },
     formatDate(dateString) {
       // 明确指定时间为 UTC 时间，然后转换为本地时间
@@ -650,6 +710,165 @@ export default {
   .like-button, .comment-button, .delete-button {
     flex: 1;
     min-width: 120px;
+  }
+}
+
+/* 加载状态样式 */
+.loading-container {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-color);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #42b983;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+}
+
+/* 错误状态样式 */
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  margin: 20px 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.error-title {
+  color: #ef4444;
+  font-size: 1.5rem;
+  margin: 0 0 15px 0;
+  font-weight: 600;
+}
+
+.error-message {
+  color: var(--text-color);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 30px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.error-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.retry-button, .admin-button, .create-first-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-button {
+  background-color: #42b983;
+  color: white;
+}
+
+.retry-button:hover:not(:disabled) {
+  background-color: #3aa876;
+  transform: translateY(-1px);
+}
+
+.retry-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.admin-button {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.admin-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* 空数据状态样式 */
+.empty-container {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-color);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 1.5rem;
+  margin: 0 0 15px 0;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.empty-message {
+  font-size: 1rem;
+  color: #666;
+  margin: 0 0 30px 0;
+  line-height: 1.6;
+}
+
+.create-first-button {
+  background-color: #42b983;
+  color: white;
+}
+
+.create-first-button:hover {
+  background-color: #3aa876;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .retry-button, .admin-button, .create-first-button {
+    width: 100%;
+    max-width: 250px;
+  }
+  
+  .loading-container, .error-container, .empty-container {
+    padding: 40px 15px;
   }
 }
 </style>

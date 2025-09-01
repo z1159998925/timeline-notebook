@@ -72,11 +72,11 @@
           </div>
           <div class="capsule-content">
             <p><strong>内容:</strong> {{ capsule.content || '无内容' }}</p>
-            <p><strong>问题:</strong> {{ capsule.question }}</p>
-            <p><strong>创建时间:</strong> {{ formatDate(capsule.created_at) }}</p>
-            <p><strong>解锁时间:</strong> {{ formatDate(capsule.unlock_date) }}</p>
+            <p v-if="capsule.question"><strong>问题:</strong> {{ capsule.question }}</p>
+            <p v-if="capsule.created_at"><strong>创建时间:</strong> {{ formatDate(capsule.created_at) }}</p>
+            <p v-if="capsule.unlock_date"><strong>解锁时间:</strong> {{ formatDate(capsule.unlock_date) }}</p>
             <p v-if="capsule.has_media"><strong>附件:</strong> {{ capsule.media_type }}</p>
-            <p v-if="!capsule.can_unlock && !capsule.is_unlocked">
+            <p v-if="!capsule.can_unlock && !capsule.is_unlocked && capsule.remaining_time != null && capsule.remaining_time > 0">
               <strong>剩余时间:</strong> {{ formatCountdown(capsule.remaining_time) }}
             </p>
           </div>
@@ -620,11 +620,25 @@ export default {
 
     // 格式化日期
     formatDate(dateString) {
-      return new Date(dateString).toLocaleString('zh-CN');
+      if (!dateString) {
+        return '未知时间';
+      }
+      
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '无效日期';
+      }
+      
+      return date.toLocaleString('zh-CN');
     },
 
     // 格式化倒计时
     formatCountdown(seconds) {
+      // 检查参数是否为有效数字
+      if (typeof seconds !== 'number' || isNaN(seconds)) {
+        return '计算中...';
+      }
+      
       if (seconds <= 0) return '已可解锁';
       
       const days = Math.floor(seconds / 86400);

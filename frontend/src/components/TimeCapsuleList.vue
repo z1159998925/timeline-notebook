@@ -84,7 +84,29 @@
 
     <!-- 胶囊列表 -->
     <div class="capsules-grid">
-      <div v-if="capsules.length === 0" class="empty-state">
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载时间胶囊...</p>
+      </div>
+      
+      <!-- 错误状态 -->
+      <div v-else-if="error" class="error-state">
+        <div class="error-icon">⚠️</div>
+        <h3>加载失败</h3>
+        <p>{{ error }}</p>
+        <div class="error-actions">
+          <button @click="retryLoadCapsules" class="retry-btn">
+            🔄 重试 {{ retryCount > 0 ? `(${retryCount})` : '' }}
+          </button>
+          <button @click="$router.push('/admin')" class="admin-btn">
+            🔧 管理员登录
+          </button>
+        </div>
+      </div>
+      
+      <!-- 空数据状态 -->
+      <div v-else-if="capsules.length === 0" class="empty-state">
         <div class="empty-icon">📦</div>
         <p>还没有时间胶囊</p>
         <p class="empty-subtitle">创建你的第一个时间胶囊，封存珍贵回忆</p>
@@ -106,9 +128,9 @@
         </div>
         
         <div class="capsule-info">
-          <p><strong>创建时间：</strong>{{ formatDate(capsule.created_at) }}</p>
-          <p><strong>解锁时间：</strong>{{ formatDate(capsule.unlock_date) }}</p>
-          <p class="capsule-question" v-if="capsule.can_unlock && !capsule.is_unlocked">
+          <p v-if="capsule.created_at"><strong>创建时间：</strong>{{ formatDate(capsule.created_at) }}</p>
+          <p v-if="capsule.unlock_date"><strong>解锁时间：</strong>{{ formatDate(capsule.unlock_date) }}</p>
+          <p class="capsule-question" v-if="capsule.can_unlock && !capsule.is_unlocked && capsule.question">
             <strong>解锁问题：</strong>{{ capsule.question }}
           </p>
           <p v-if="capsule.has_media" class="media-indicator">
@@ -117,7 +139,7 @@
         </div>
         
         <!-- 倒计时 -->
-        <div v-if="!capsule.is_unlocked && !capsule.can_unlock" class="countdown">
+        <div v-if="!capsule.is_unlocked && !capsule.can_unlock && capsule.remaining_time != null && capsule.remaining_time > 0" class="countdown">
           <div class="countdown-title">距离解锁还有：</div>
           <div class="countdown-time">{{ formatCountdown(capsule.remaining_time) }}</div>
         </div>
@@ -236,6 +258,9 @@ export default {
     const isUnlocking = ref(false)
     const selectedFile = ref(null)
     const countdownInterval = ref(null)
+    const loading = ref(false)
+    const error = ref('')
+    const retryCount = ref(0)
 
     const newCapsule = ref({
       title: '',
@@ -255,12 +280,36 @@ export default {
 
     // 加载胶囊列表
     const loadCapsules = async () => {
+      loading.value = true
+      error.value = ''
       try {
         const response = await api.get('/time-capsules')
         capsules.value = response.data
-      } catch (error) {
-        console.error('加载时间胶囊失败:', error)
+        retryCount.value = 0
+      } catch (err) {
+        console.error('加载时间胶囊失败:', err)
+        if (err.response) {
+          if (err.response.status === 404) {
+            error.value = '时间胶囊服务暂时不可用，请稍后重试'
+          } else if (err.response.status >= 500) {
+            error.value = '服务器错误，请稍后重试'
+          } else {
+            error.value = '加载时间胶囊失败，请检查网络连接'
+          }
+        } else if (err.request) {
+          error.value = '网络连接失败，请检查网络设置后重试'
+        } else {
+          error.value = '加载时间胶囊时发生未知错误'
+        }
+      } finally {
+        loading.value = false
       }
+    }
+
+    // 重试加载数据
+    const retryLoadCapsules = () => {
+      retryCount.value++
+      loadCapsules()
     }
 
     // 创建胶囊
@@ -376,17 +425,31 @@ export default {
 
     // 格式化日期
     const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleString('zh-CN')
+      if (!dateString) {
+        return '未知时间'
+      }
+      
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) {
+        return '无效日期'
+      }
+      
+      return date.toLocaleString('zh-CN')
     }
 
     // 格式化倒计时
     const formatCountdown = (seconds) => {
+      // 检查参数是否为有效数字
+      if (typeof seconds !== 'number' || isNaN(seconds)) {
+        return '计算中...'
+      }
+      
       if (seconds <= 0) return '已可解锁'
       
       const days = Math.floor(seconds / 86400)
       const hours = Math.floor((seconds % 86400) / 3600)
       const minutes = Math.floor((seconds % 3600) / 60)
-      const secs = seconds % 60
+      const secs = Math.floor(seconds % 60)
 
       if (days > 0) {
         return `${days}天 ${hours}小时 ${minutes}分钟`
@@ -447,6 +510,9 @@ export default {
       isUnlocking,
       newCapsule,
       minDateTime,
+      loading,
+      error,
+      retryCount,
       createCapsule,
       unlockCapsule,
       viewCapsule,
@@ -457,7 +523,8 @@ export default {
       closeViewDialog,
       formatDate,
       formatCountdown,
-      getMediaUrl
+      getMediaUrl,
+      retryLoadCapsules
     }
   }
 }
@@ -615,6 +682,83 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
+}
+
+/* 加载状态 */
+.loading-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-color);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--button-bg);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 错误状态 */
+.error-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-color);
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.error-state h3 {
+  color: #e74c3c;
+  margin-bottom: 15px;
+}
+
+.error-state p {
+  margin-bottom: 25px;
+  opacity: 0.8;
+}
+
+.error-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.retry-btn, .admin-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.retry-btn {
+  background: var(--button-bg);
+  color: white;
+}
+
+.admin-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.retry-btn:hover, .admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .empty-state {
@@ -823,6 +967,15 @@ export default {
   
   .header-section h2 {
     font-size: 2rem;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .retry-btn, .admin-btn {
+    width: 200px;
   }
 }
 </style>
