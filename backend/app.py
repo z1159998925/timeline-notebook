@@ -80,7 +80,7 @@ if __name__ == '__main__':
     is_production = os.environ.get('FLASK_ENV') == 'production'
     debug_mode = not is_production
     
-    # Railway会通过PORT环境变量提供端口号
+    # 服务器部署时通过PORT环境变量提供端口号
     port = int(os.environ.get('PORT', 5000))
     
     if is_production:

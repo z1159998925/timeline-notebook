@@ -59,9 +59,9 @@ class EnvironmentManager {
         logLevel: 'debug'
       },
       production: {
-        apiBaseURL: 'https://your-railway-app.railway.app/api',
-        mediaBaseURL: 'https://your-railway-app.railway.app/static',
-        wsBaseURL: 'wss://your-railway-app.railway.app',
+        apiBaseURL: 'https://your-domain.com/api',
+    mediaBaseURL: 'https://your-domain.com/static',
+    wsBaseURL: 'wss://your-domain.com',
         timeout: 5000,
         withCredentials: true,
         debug: false,
